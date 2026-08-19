@@ -11,7 +11,9 @@ app = FastAPI()
 
 @app.get("/")
 def home():
-    return {"message": "5G AI Smart Campus backend is running!"}
+    return {
+        "message": "5G AI Smart Campus backend is running!"
+    }
 
 
 @app.get("/health")
@@ -72,3 +74,22 @@ def get_telemetry(
     )
 
     return records
+
+
+@app.get("/api/v1/telemetry/latest")
+def get_latest_telemetry(
+    db: Session = Depends(get_db)
+):
+    record = (
+        db.query(TelemetryRecord)
+        .order_by(TelemetryRecord.timestamp.desc())
+        .first()
+    )
+
+    if record is None:
+        return {
+            "status": "no_data",
+            "message": "No telemetry records found"
+        }
+
+    return record
