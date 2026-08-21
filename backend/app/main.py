@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
@@ -8,12 +10,12 @@ from .models import Telemetry
 
 app = FastAPI()
 
+OFFLINE_TIMEOUT_SECONDS = 60
+
 
 @app.get("/")
 def home():
-    return {
-        "message": "5G AI Smart Campus backend is running!"
-    }
+    return {"message": "5G AI Smart Campus backend is running!"}
 
 
 @app.get("/health")
@@ -29,23 +31,20 @@ def receive_telemetry(
     data: Telemetry,
     db: Session = Depends(get_db)
 ):
+    received_at = datetime.now(timezone.utc)
+
     record = TelemetryRecord(
         device_id=data.device_id,
         timestamp=data.timestamp,
-
         ldr1_value=data.zone1.ldr1_value,
         pir1_motion=data.zone1.pir1_motion,
         bulb1_state=data.zone1.bulb1_state,
-
         ldr2_value=data.zone2.ldr2_value,
         pir2_motion=data.zone2.pir2_motion,
         bulb2_state=data.zone2.bulb2_state,
-
         temperature_c=data.environment.temperature_c,
         humidity_percent=data.environment.humidity_percent,
-
         fan_state=data.fan.fan_state,
-
         acs712_sensor_voltage=data.energy.acs712_sensor_voltage,
         current_indication=data.energy.current_indication,
     )
@@ -61,12 +60,12 @@ def receive_telemetry(
     if device is None:
         device = Device(
             device_id=data.device_id,
-            last_seen=data.timestamp,
+            last_seen=received_at,
             is_online=True
         )
         db.add(device)
     else:
-        device.last_seen = data.timestamp
+        device.last_seen = received_at
         device.is_online = True
 
     db.commit()
@@ -82,22 +81,16 @@ def receive_telemetry(
 
 
 @app.get("/api/v1/telemetry")
-def get_telemetry(
-    db: Session = Depends(get_db)
-):
-    records = (
+def get_telemetry(db: Session = Depends(get_db)):
+    return (
         db.query(TelemetryRecord)
         .order_by(TelemetryRecord.timestamp.desc())
         .all()
     )
 
-    return records
-
 
 @app.get("/api/v1/telemetry/latest")
-def get_latest_telemetry(
-    db: Session = Depends(get_db)
-):
+def get_latest_telemetry(db: Session = Depends(get_db)):
     record = (
         db.query(TelemetryRecord)
         .order_by(TelemetryRecord.timestamp.desc())
@@ -113,17 +106,46 @@ def get_latest_telemetry(
     return record
 
 
+def update_device_status(device):
+    if device.last_seen is None:
+        device.is_online = False
+        return
+
+    last_seen = device.last_seen
+
+    if last_seen.tzinfo is None:
+        last_seen = last_seen.replace(tzinfo=timezone.utc)
+
+    elapsed_seconds = (
+        datetime.now(timezone.utc) - last_seen
+    ).total_seconds()
+
+    device.is_online = elapsed_seconds <= OFFLINE_TIMEOUT_SECONDS
+
+
 @app.get("/api/v1/devices")
-def get_devices(
-    db: Session = Depends(get_db)
-):
+def get_devices(db: Session = Depends(get_db)):
     devices = (
         db.query(Device)
         .order_by(Device.device_id)
         .all()
     )
 
-    return devices
+    response = []
+
+    for device in devices:
+        update_device_status(device)
+
+        response.append({
+            "id": device.id,
+            "device_id": device.device_id,
+            "last_seen": device.last_seen,
+            "is_online": device.is_online
+        })
+
+    db.commit()
+
+    return response
 
 
 @app.get("/api/v1/devices/{device_id}")
@@ -143,4 +165,15 @@ def get_device(
             detail=f"Device '{device_id}' not found"
         )
 
-    return device
+    update_device_status(device)
+
+    response = {
+        "id": device.id,
+        "device_id": device.device_id,
+        "last_seen": device.last_seen,
+        "is_online": device.is_online
+    }
+
+    db.commit()
+
+    return response
