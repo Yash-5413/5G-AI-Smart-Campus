@@ -1,8 +1,8 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from .db.dependencies import get_db
-from .db.models import TelemetryRecord
+from .db.models import Device, TelemetryRecord
 from .models import Telemetry
 
 
@@ -51,6 +51,24 @@ def receive_telemetry(
     )
 
     db.add(record)
+
+    device = (
+        db.query(Device)
+        .filter(Device.device_id == data.device_id)
+        .first()
+    )
+
+    if device is None:
+        device = Device(
+            device_id=data.device_id,
+            last_seen=data.timestamp,
+            is_online=True
+        )
+        db.add(device)
+    else:
+        device.last_seen = data.timestamp
+        device.is_online = True
+
     db.commit()
     db.refresh(record)
 
@@ -93,3 +111,36 @@ def get_latest_telemetry(
         }
 
     return record
+
+
+@app.get("/api/v1/devices")
+def get_devices(
+    db: Session = Depends(get_db)
+):
+    devices = (
+        db.query(Device)
+        .order_by(Device.device_id)
+        .all()
+    )
+
+    return devices
+
+
+@app.get("/api/v1/devices/{device_id}")
+def get_device(
+    device_id: str,
+    db: Session = Depends(get_db)
+):
+    device = (
+        db.query(Device)
+        .filter(Device.device_id == device_id)
+        .first()
+    )
+
+    if device is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Device '{device_id}' not found"
+        )
+
+    return device
