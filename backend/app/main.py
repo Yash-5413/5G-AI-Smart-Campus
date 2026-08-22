@@ -177,3 +177,75 @@ def get_device(
     db.commit()
 
     return response
+
+
+@app.get("/api/v1/dashboard/summary")
+def get_dashboard_summary(
+    db: Session = Depends(get_db)
+):
+    latest = (
+        db.query(TelemetryRecord)
+        .order_by(TelemetryRecord.timestamp.desc())
+        .first()
+    )
+
+    if latest is None:
+        return {
+            "status": "no_data",
+            "message": "No telemetry data available"
+        }
+
+    device = (
+        db.query(Device)
+        .filter(Device.device_id == latest.device_id)
+        .first()
+    )
+
+    if device is not None:
+        update_device_status(device)
+        db.commit()
+
+    return {
+        "device": {
+            "device_id": latest.device_id,
+            "is_online": (
+                device.is_online
+                if device is not None
+                else False
+            ),
+            "last_seen": (
+                device.last_seen
+                if device is not None
+                else None
+            )
+        },
+
+        "zone1": {
+            "ldr1_value": latest.ldr1_value,
+            "pir1_motion": latest.pir1_motion,
+            "bulb1_state": latest.bulb1_state
+        },
+
+        "zone2": {
+            "ldr2_value": latest.ldr2_value,
+            "pir2_motion": latest.pir2_motion,
+            "bulb2_state": latest.bulb2_state
+        },
+
+        "environment": {
+            "temperature_c": latest.temperature_c,
+            "humidity_percent": latest.humidity_percent
+        },
+
+        "fan": {
+            "fan_state": latest.fan_state
+        },
+
+        "energy": {
+            "acs712_sensor_voltage": latest.acs712_sensor_voltage,
+            "current_indication": latest.current_indication,
+            "measurement_status": "experimental"
+        },
+
+        "telemetry_timestamp": latest.timestamp
+    }
