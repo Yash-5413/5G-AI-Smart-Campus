@@ -5,11 +5,14 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from .db.dependencies import get_db
-from .db.models import Device, TelemetryRecord
+from .db.models import Device, Event, TelemetryRecord
+from .db.init_db import init_db
 from .models import Telemetry
 
 
 app = FastAPI()
+
+init_db()
 
 
 @app.get("/dashboard")
@@ -20,6 +23,28 @@ def dashboard():
 
 
 OFFLINE_TIMEOUT_SECONDS = 60
+
+def create_event(
+    db: Session,
+    device_id: str,
+    timestamp: datetime,
+    event_type: str,
+    source: str,
+    message: str
+):
+    event = Event(
+        device_id=device_id,
+        timestamp=timestamp,
+        event_type=event_type,
+        source=source,
+        message=message
+    )
+    db.add(event)
+
+    print(
+        f"EVENT CREATED: {event_type} | "
+        f"{source} | {message}"
+    )
 
 
 @app.get("/")
@@ -57,15 +82,160 @@ def receive_telemetry(
         acs712_sensor_voltage=data.energy.acs712_sensor_voltage,
         current_indication=data.energy.current_indication,
     )
-
     db.add(record)
+    
+    db.flush()
+
+    previous = (
+        db.query(TelemetryRecord)
+        .filter(
+            TelemetryRecord.device_id == data.device_id,
+            TelemetryRecord.id != record.id
+        )
+        .order_by(
+            TelemetryRecord.timestamp.desc()
+        )
+        .first()
+    )
+
+
+    if previous is not None:
+
+        if (
+            not previous.pir1_motion
+            and data.zone1.pir1_motion
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "MOTION_DETECTED",
+                "ZONE_1",
+                "Motion detected in Zone 1"
+            )
+
+        if (
+            previous.pir1_motion
+            and not data.zone1.pir1_motion
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "MOTION_CLEARED",
+                "ZONE_1",
+                "Motion cleared in Zone 1"
+            )
+
+        if (
+            not previous.bulb1_state
+            and data.zone1.bulb1_state
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "BULB_TURNED_ON",
+                "ZONE_1",
+                "Zone 1 bulb turned ON"
+            )
+
+        if (
+            previous.bulb1_state
+            and not data.zone1.bulb1_state
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "BULB_TURNED_OFF",
+                "ZONE_1",
+                "Zone 1 bulb turned OFF"
+            )
+
+        if (
+            not previous.pir2_motion
+            and data.zone2.pir2_motion
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "MOTION_DETECTED",
+                "ZONE_2",
+                "Motion detected in Zone 2"
+            )
+
+        if (
+            previous.pir2_motion
+            and not data.zone2.pir2_motion
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "MOTION_CLEARED",
+                "ZONE_2",
+                "Motion cleared in Zone 2"
+            )
+
+        if (
+            not previous.bulb2_state
+            and data.zone2.bulb2_state
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "BULB_TURNED_ON",
+                "ZONE_2",
+                "Zone 2 bulb turned ON"
+            )
+
+        if (
+            previous.bulb2_state
+            and not data.zone2.bulb2_state
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "BULB_TURNED_OFF",
+                "ZONE_2",
+                "Zone 2 bulb turned OFF"
+            )
+
+        if (
+            not previous.fan_state
+            and data.fan.fan_state
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "FAN_TURNED_ON",
+                "FAN",
+                "Fan turned ON"
+            )
+
+        if (
+            previous.fan_state
+            and not data.fan.fan_state
+        ):
+            create_event(
+                db,
+                data.device_id,
+                data.timestamp,
+                "FAN_TURNED_OFF",
+                "FAN",
+                "Fan turned OFF"
+            )
 
     device = (
         db.query(Device)
         .filter(Device.device_id == data.device_id)
         .first()
     )
-
     if device is None:
         device = Device(
             device_id=data.device_id,
@@ -114,6 +284,14 @@ def get_latest_telemetry(db: Session = Depends(get_db)):
 
     return record
 
+@app.get("/api/v1/events")
+def get_events(db: Session = Depends(get_db)):
+    return (
+        db.query(Event)
+        .order_by(Event.timestamp.desc())
+        .limit(10)
+        .all()
+    )
 
 def update_device_status(device):
     if device.last_seen is None:

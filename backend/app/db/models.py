@@ -70,3 +70,36 @@ class Device(Base):
         Boolean,
         default=False
     )
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    device_id: Mapped[str] = mapped_column(
+        String,
+        index=True
+    )
+
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime,
+        index=True
+    )
+
+    event_type: Mapped[str] = mapped_column(
+        String,
+        index=True
+    )
+
+    source: Mapped[str] = mapped_column(
+        String
+    )
+
+    message: Mapped[str] = mapped_column(
+        String
+    )
