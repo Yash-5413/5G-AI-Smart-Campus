@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from .db.dependencies import get_db
@@ -9,6 +10,14 @@ from .models import Telemetry
 
 
 app = FastAPI()
+
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse(
+        "backend/app/static/dashboard.html"
+    )
+
 
 OFFLINE_TIMEOUT_SECONDS = 60
 
