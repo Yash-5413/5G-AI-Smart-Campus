@@ -2298,6 +2298,100 @@ function renderTelemetryTable(
 
 }
 
+/* =============================================================
+   LOAD EVENTS
+============================================================= */
+
+async function loadEvents() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/v1/events"
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Events HTTP " +
+                response.status
+            );
+
+        }
+
+        const events =
+            await response.json();
+
+        renderEvents(
+            events
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Events error:",
+            error
+        );
+
+    }
+
+}
+
+/* =============================================================
+   EVENTS LIST
+============================================================= */
+
+function renderEvents(
+    events
+) {
+
+    const eventsList =
+        document.getElementById(
+            "eventsList"
+        );
+
+    if (!eventsList) {
+        return;
+    }
+
+    if (!events.length) {
+
+        eventsList.innerHTML =
+            "No recent events.";
+
+        return;
+    }
+
+    eventsList.innerHTML =
+        events
+            .slice(0, 8)
+            .map(
+                event => `
+                    <div class="event-item">
+
+                        <strong>
+                            ${event.message}
+                        </strong>
+
+                        <div>
+                            ${event.source}
+                            ·
+                            ${event.event_type}
+                        </div>
+
+                        <small>
+                            ${event.timestamp}
+                        </small>
+
+                    </div>
+                `
+            )
+            .join("");
+
+}
 
 /* =============================================================
    TEMPERATURE CHART
@@ -2690,6 +2784,8 @@ function renderTemperatureChart(
 loadSummary();
 
 loadTelemetry();
+
+loadEvents();
 
 
 /* =============================================================
