@@ -1663,6 +1663,33 @@
 
 </section>
 
+<section class="section">
+
+    <div class="section-header">
+
+        <div class="section-title">
+            Smart Insights
+        </div>
+
+        <div class="section-caption">
+            Latest analytics from ESP32 telemetry
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <div
+            id="insightsList"
+            class="panel-body"
+        >
+            Loading insights...
+        </div>
+
+    </div>
+
+</section>
+
 </main>
 
 
@@ -2393,6 +2420,74 @@ function renderEvents(
 
 }
 
+async function loadInsights() {
+
+    const insightsList =
+        document.getElementById(
+            "insightsList"
+        );
+
+    if (!insightsList) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/v1/analytics/latest"
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "Insights HTTP " +
+                response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if (data.status === "no_data") {
+            insightsList.textContent =
+                "No analytics data available.";
+
+            return;
+        }
+
+        insightsList.replaceChildren();
+
+        data.insights.forEach(
+            insight => {
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                item.textContent = insight;
+
+                insightsList.appendChild(
+                    item
+                );
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Insights error:",
+            error
+        );
+
+        insightsList.textContent =
+            "Unable to load insights.";
+
+    }
+
+}
+
 /* =============================================================
    TEMPERATURE CHART
 ============================================================= */
@@ -2787,6 +2882,8 @@ loadTelemetry();
 
 loadEvents();
 
+loadInsights();
+
 
 /* =============================================================
    AUTO REFRESH
@@ -2800,6 +2897,12 @@ setInterval(
 
 setInterval(
     loadTelemetry,
+    5000
+);
+
+
+setInterval(
+    loadInsights,
     5000
 );
 
