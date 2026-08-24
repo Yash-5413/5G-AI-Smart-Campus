@@ -1553,6 +1553,35 @@
 
 
 
+<section class="section">
+
+    <div class="section-header">
+
+        <div class="section-title">
+            Historical Analytics
+        </div>
+
+        <div class="section-caption">
+            Historical high-temperature analysis
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <div
+            id="historicalAnalytics"
+            class="panel-body"
+        >
+            Loading historical analytics...
+        </div>
+
+    </div>
+
+</section>
+
+
+
 <!-- =============================================================
      RECENT TELEMETRY
 ============================================================= -->
@@ -2488,6 +2517,152 @@ async function loadInsights() {
 
 }
 
+async function loadHistoricalAnalytics() {
+
+    const historicalAnalytics =
+        document.getElementById(
+            "historicalAnalytics"
+        );
+
+    if (!historicalAnalytics) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/v1/analytics/historical"
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "Historical analytics HTTP " +
+                response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if (data.status === "no_data") {
+            historicalAnalytics.textContent =
+                "No historical analytics data available.";
+
+            return;
+        }
+
+        const episodes =
+            data.high_temperature_episodes || [];
+
+        if (!episodes.length) {
+            historicalAnalytics.textContent =
+                "No high-temperature episodes detected.";
+
+            return;
+        }
+
+        historicalAnalytics.replaceChildren();
+
+        const total =
+            document.createElement(
+                "div"
+            );
+
+        total.textContent =
+            "Total high-temperature episodes: " +
+            data.total_high_temperature_episodes;
+
+        historicalAnalytics.appendChild(
+            total
+        );
+
+        episodes.forEach(
+            episode => {
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                const start =
+                    document.createElement(
+                        "div"
+                    );
+
+                start.textContent =
+                    "Start: " +
+                    episode.start_timestamp;
+
+                const end =
+                    document.createElement(
+                        "div"
+                    );
+
+                end.textContent =
+                    "End: " +
+                    episode.end_timestamp;
+
+                const peak =
+                    document.createElement(
+                        "div"
+                    );
+
+                peak.textContent =
+                    "Peak temperature: " +
+                    episode.peak_temperature;
+
+                const samples =
+                    document.createElement(
+                        "div"
+                    );
+
+                samples.textContent =
+                    "Sample count: " +
+                    episode.sample_count;
+
+                const cooling =
+                    document.createElement(
+                        "div"
+                    );
+
+                cooling.textContent =
+                    "Cooling response: " +
+                    (
+                        episode.cooling_response_observed
+                        ? "Observed"
+                        : "Not observed"
+                    );
+
+                item.append(
+                    start,
+                    end,
+                    peak,
+                    samples,
+                    cooling
+                );
+
+                historicalAnalytics.appendChild(
+                    item
+                );
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Historical analytics error:",
+            error
+        );
+
+        historicalAnalytics.textContent =
+            "Unable to load historical analytics.";
+
+    }
+
+}
+
 /* =============================================================
    TEMPERATURE CHART
 ============================================================= */
@@ -2884,6 +3059,8 @@ loadEvents();
 
 loadInsights();
 
+loadHistoricalAnalytics();
+
 
 /* =============================================================
    AUTO REFRESH
@@ -2903,6 +3080,12 @@ setInterval(
 
 setInterval(
     loadInsights,
+    5000
+);
+
+
+setInterval(
+    loadHistoricalAnalytics,
     5000
 );
 
