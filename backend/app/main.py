@@ -8,7 +8,7 @@ from .db.dependencies import get_db
 from .db.models import Device, Event, TelemetryRecord
 from .db.init_db import init_db
 from .models import Telemetry
-from .analytics import get_latest_insights
+from .analytics import get_latest_insights, get_historical_insights
 
 
 app = FastAPI()
@@ -371,6 +371,13 @@ def get_latest_analytics(
     db: Session = Depends(get_db)
 ):
     return get_latest_insights(db)
+
+
+@app.get("/api/v1/analytics/historical")
+def get_historical_analytics(
+    db: Session = Depends(get_db)
+):
+    return get_historical_insights(db)
 
 
 @app.get("/api/v1/dashboard/summary")
