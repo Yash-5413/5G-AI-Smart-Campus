@@ -762,6 +762,120 @@
 
 
         /* =========================================================
+           LOWER DASHBOARD DYNAMIC CONTENT
+        ========================================================= */
+
+        #historicalAnalytics,
+        #anomalyAnalytics,
+        #insightsList,
+        #eventsList {
+            padding: 10px 14px;
+
+            font-size: 11px;
+        }
+
+
+        #historicalAnalytics .energy-row,
+        #anomalyAnalytics .energy-row {
+            padding: 8px 0;
+        }
+
+
+        #historicalAnalytics .analytics-episode,
+        #anomalyAnalytics .current-anomaly {
+            padding: 9px 0;
+
+            border-bottom:
+                1px solid var(--border);
+        }
+
+
+        #historicalAnalytics .analytics-episode:last-child,
+        #anomalyAnalytics .current-anomaly:last-child {
+            border-bottom: none;
+        }
+
+
+        #historicalAnalytics .analytics-item-title,
+        #anomalyAnalytics .analytics-item-title {
+            margin-bottom: 3px;
+
+            color: var(--text-soft);
+
+            font-size: 9px;
+
+            font-weight: 800;
+
+            letter-spacing: 0.3px;
+
+            text-transform: uppercase;
+        }
+
+
+        #historicalAnalytics .energy-label,
+        #anomalyAnalytics .energy-label {
+            color: var(--text-soft);
+
+            font-size: 10px;
+        }
+
+
+        #historicalAnalytics .energy-value,
+        #anomalyAnalytics .energy-value {
+            color: var(--text);
+
+            font-size: 11px;
+        }
+
+
+        #insightsList .insight-item,
+        #eventsList .event-item {
+            padding: 8px 0;
+
+            border-bottom:
+                1px solid var(--border);
+        }
+
+
+        #insightsList .insight-item:last-child,
+        #eventsList .event-item:last-child {
+            border-bottom: none;
+        }
+
+
+        #insightsList .insight-item {
+            color: var(--text);
+
+            line-height: 1.45;
+        }
+
+
+        #eventsList .event-title {
+            display: block;
+
+            color: var(--text);
+
+            font-size: 11px;
+        }
+
+
+        #eventsList .event-meta,
+        #eventsList .event-timestamp,
+        #insightsList .dynamic-message,
+        #eventsList .dynamic-message,
+        #historicalAnalytics .dynamic-message,
+        #anomalyAnalytics .dynamic-message {
+            display: block;
+
+            margin-top: 3px;
+
+            color: var(--text-soft);
+
+            font-size: 10px;
+        }
+
+
+        /* =========================================================
            TELEMETRY TABLE
         ========================================================= */
 
@@ -1574,6 +1688,35 @@
             class="panel-body"
         >
             Loading historical analytics...
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<section class="section">
+
+    <div class="section-header">
+
+        <div class="section-title">
+            Anomaly Detection
+        </div>
+
+        <div class="section-caption">
+            Context-aware analysis of historical telemetry
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <div
+            id="anomalyAnalytics"
+            class="panel-body"
+        >
+            Loading anomaly analysis...
         </div>
 
     </div>
@@ -2415,8 +2558,11 @@ function renderEvents(
 
     if (!events.length) {
 
-        eventsList.innerHTML =
-            "No recent events.";
+        eventsList.innerHTML = `
+            <span class="dynamic-message">
+                No recent events.
+            </span>
+        `;
 
         return;
     }
@@ -2428,17 +2574,17 @@ function renderEvents(
                 event => `
                     <div class="event-item">
 
-                        <strong>
+                        <strong class="event-title">
                             ${event.message}
                         </strong>
 
-                        <div>
+                        <div class="event-meta">
                             ${event.source}
                             ·
                             ${event.event_type}
                         </div>
 
-                        <small>
+                        <small class="event-timestamp">
                             ${event.timestamp}
                         </small>
 
@@ -2478,8 +2624,11 @@ async function loadInsights() {
             await response.json();
 
         if (data.status === "no_data") {
-            insightsList.textContent =
-                "No analytics data available.";
+            insightsList.innerHTML = `
+                <span class="dynamic-message">
+                    No analytics data available.
+                </span>
+            `;
 
             return;
         }
@@ -2492,6 +2641,9 @@ async function loadInsights() {
                     document.createElement(
                         "div"
                     );
+
+                item.className =
+                    "insight-item";
 
                 item.textContent = insight;
 
@@ -2510,10 +2662,55 @@ async function loadInsights() {
             error
         );
 
-        insightsList.textContent =
-            "Unable to load insights.";
+        insightsList.innerHTML = `
+            <span class="dynamic-message">
+                Unable to load insights.
+            </span>
+        `;
 
     }
+
+}
+
+function createAnalyticsRow(
+    label,
+    value,
+    valueClass = "energy-value"
+) {
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+    row.className =
+        "energy-row";
+
+    const labelElement =
+        document.createElement(
+            "span"
+        );
+
+    labelElement.className =
+        "energy-label";
+
+    labelElement.textContent = label;
+
+    const valueElement =
+        document.createElement(
+            "strong"
+        );
+
+    valueElement.className = valueClass;
+
+    valueElement.textContent = value;
+
+    row.append(
+        labelElement,
+        valueElement
+    );
+
+    return row;
 
 }
 
@@ -2546,8 +2743,11 @@ async function loadHistoricalAnalytics() {
             await response.json();
 
         if (data.status === "no_data") {
-            historicalAnalytics.textContent =
-                "No historical analytics data available.";
+            historicalAnalytics.innerHTML = `
+                <span class="dynamic-message">
+                    No historical analytics data available.
+                </span>
+            `;
 
             return;
         }
@@ -2556,89 +2756,73 @@ async function loadHistoricalAnalytics() {
             data.high_temperature_episodes || [];
 
         if (!episodes.length) {
-            historicalAnalytics.textContent =
-                "No high-temperature episodes detected.";
+            historicalAnalytics.innerHTML = `
+                <span class="dynamic-message">
+                    No high-temperature episodes detected.
+                </span>
+            `;
 
             return;
         }
 
         historicalAnalytics.replaceChildren();
 
-        const total =
-            document.createElement(
-                "div"
-            );
-
-        total.textContent =
-            "Total high-temperature episodes: " +
-            data.total_high_temperature_episodes;
-
         historicalAnalytics.appendChild(
-            total
+            createAnalyticsRow(
+                "Total high-temperature episodes",
+                data.total_high_temperature_episodes
+            )
         );
 
         episodes.forEach(
-            episode => {
+            (episode, index) => {
                 const item =
                     document.createElement(
                         "div"
                     );
 
-                const start =
+                item.className =
+                    "analytics-episode";
+
+                const title =
                     document.createElement(
                         "div"
                     );
 
-                start.textContent =
-                    "Start: " +
-                    episode.start_timestamp;
+                title.className =
+                    "analytics-item-title";
 
-                const end =
-                    document.createElement(
-                        "div"
-                    );
-
-                end.textContent =
-                    "End: " +
-                    episode.end_timestamp;
-
-                const peak =
-                    document.createElement(
-                        "div"
-                    );
-
-                peak.textContent =
-                    "Peak temperature: " +
-                    episode.peak_temperature;
-
-                const samples =
-                    document.createElement(
-                        "div"
-                    );
-
-                samples.textContent =
-                    "Sample count: " +
-                    episode.sample_count;
-
-                const cooling =
-                    document.createElement(
-                        "div"
-                    );
-
-                cooling.textContent =
-                    "Cooling response: " +
-                    (
-                        episode.cooling_response_observed
-                        ? "Observed"
-                        : "Not observed"
-                    );
+                title.textContent =
+                    "Episode " +
+                    (index + 1);
 
                 item.append(
-                    start,
-                    end,
-                    peak,
-                    samples,
-                    cooling
+                    title,
+                    createAnalyticsRow(
+                        "Start",
+                        episode.start_timestamp
+                    ),
+                    createAnalyticsRow(
+                        "End",
+                        episode.end_timestamp
+                    ),
+                    createAnalyticsRow(
+                        "Peak temperature",
+                        episode.peak_temperature + " °C"
+                    ),
+                    createAnalyticsRow(
+                        "Sample count",
+                        episode.sample_count
+                    ),
+                    createAnalyticsRow(
+                        "Cooling response",
+                        episode.cooling_response_observed
+                            ? "OBSERVED"
+                            : "NOT OBSERVED",
+                        episode.cooling_response_observed
+                            ? "badge badge-on"
+                            : "badge badge-motion"
+                    )
                 );
 
                 historicalAnalytics.appendChild(
@@ -2656,8 +2840,172 @@ async function loadHistoricalAnalytics() {
             error
         );
 
-        historicalAnalytics.textContent =
-            "Unable to load historical analytics.";
+        historicalAnalytics.innerHTML = `
+            <span class="dynamic-message">
+                Unable to load historical analytics.
+            </span>
+        `;
+
+    }
+
+}
+
+async function loadAnomalyAnalytics() {
+
+    const anomalyAnalytics =
+        document.getElementById(
+            "anomalyAnalytics"
+        );
+
+    if (!anomalyAnalytics) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/v1/analytics/anomalies"
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "Anomaly analytics HTTP " +
+                response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if (data.status === "no_data") {
+            anomalyAnalytics.innerHTML = `
+                <span class="dynamic-message">
+                    No anomaly analysis data available.
+                </span>
+            `;
+
+            return;
+        }
+
+        anomalyAnalytics.replaceChildren();
+
+        anomalyAnalytics.append(
+            createAnalyticsRow(
+                "High-temperature episodes",
+                data.total_high_temperature_episodes
+            ),
+            createAnalyticsRow(
+                "High-temperature episodes with cooling response",
+                data.high_temperature_episodes_with_cooling_response
+            ),
+            createAnalyticsRow(
+                "Potential cooling anomalies",
+                data.potential_cooling_anomalies,
+                data.potential_cooling_anomalies === 0
+                    ? "badge badge-off"
+                    : "badge badge-motion"
+            ),
+            createAnalyticsRow(
+                "Current spike warnings",
+                data.total_current_spike_warnings,
+                data.total_current_spike_warnings === 0
+                    ? "badge badge-off"
+                    : "badge badge-motion"
+            ),
+            createAnalyticsRow(
+                "Sustained unexplained current episodes",
+                data.sustained_unexplained_current_episodes,
+                data.sustained_unexplained_current_episodes === 0
+                    ? "badge badge-off"
+                    : "badge badge-motion"
+            )
+        );
+
+        const currentAnomalies =
+            data.current_anomalies || [];
+
+        if (!currentAnomalies.length) {
+            const emptyMessage =
+                document.createElement(
+                    "span"
+                );
+
+            emptyMessage.className =
+                "dynamic-message";
+
+            emptyMessage.textContent =
+                "No sustained unexplained current episodes detected.";
+
+            anomalyAnalytics.appendChild(
+                emptyMessage
+            );
+
+            return;
+        }
+
+        currentAnomalies.forEach(
+            (anomaly, index) => {
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                item.className =
+                    "current-anomaly";
+
+                const title =
+                    document.createElement(
+                        "div"
+                    );
+
+                title.className =
+                    "analytics-item-title";
+
+                title.textContent =
+                    "Sustained current episode " +
+                    (index + 1);
+
+                item.append(
+                    title,
+                    createAnalyticsRow(
+                        "Start",
+                        anomaly.start_timestamp
+                    ),
+                    createAnalyticsRow(
+                        "End",
+                        anomaly.end_timestamp
+                    ),
+                    createAnalyticsRow(
+                        "Peak current",
+                        anomaly.peak_current + " A"
+                    ),
+                    createAnalyticsRow(
+                        "Sample count",
+                        anomaly.sample_count
+                    )
+                );
+
+                anomalyAnalytics.appendChild(
+                    item
+                );
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Anomaly analytics error:",
+            error
+        );
+
+        anomalyAnalytics.innerHTML = `
+            <span class="dynamic-message">
+                Unable to load anomaly analysis.
+            </span>
+        `;
 
     }
 
@@ -3061,6 +3409,8 @@ loadInsights();
 
 loadHistoricalAnalytics();
 
+loadAnomalyAnalytics();
+
 
 /* =============================================================
    AUTO REFRESH
@@ -3086,6 +3436,12 @@ setInterval(
 
 setInterval(
     loadHistoricalAnalytics,
+    5000
+);
+
+
+setInterval(
+    loadAnomalyAnalytics,
     5000
 );
 
