@@ -20,7 +20,7 @@ The overall architecture is designed to support future **5G and edge/MEC integra
 
 ### 🔧 Hardware Prototype
 
-![5G-AI Smart Campus Hardware Prototype](images/abde7742-7bf9-46ba-972c-c22de2f6e959.jpg)
+![5G-AI Smart Campus Hardware Prototype](images/hardware-prototype.jpg)
 
 The physical ESP32-based prototype integrates sensors, relay-controlled loads, and supporting circuitry for Smart Campus automation.
 
