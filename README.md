@@ -311,7 +311,7 @@ The backend is located inside:
 backend/app/
 ```
 
-The exact startup command depends on the FastAPI entry point currently configured in the repository.
+The backend can be started with the following command from the `backend/` directory:
 
 ---
 
@@ -559,8 +559,11 @@ backend/app/
 
 Use the FastAPI application and configuration provided in the repository to start the backend service.
 
-> The exact startup command depends on the current FastAPI entry point in `backend/app/`.
+To start the backend:
 
+```bash
+cd backend
+uvicorn app.main:app --reload
 ---
 
 ## 📌 Project Status
