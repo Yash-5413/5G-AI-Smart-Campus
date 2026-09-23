@@ -561,9 +561,11 @@ Use the FastAPI application and configuration provided in the repository to star
 
 To start the backend:
 
-```bash
+```
+bash
 cd backend
 uvicorn app.main:app --reload
+
 ---
 
 ## 📌 Project Status
