@@ -16,6 +16,26 @@ The overall architecture is designed to support future **5G and edge/MEC integra
 
 ---
 
+## 📸 Project Demonstration
+
+### 🔧 Hardware Prototype
+
+![5G-AI Smart Campus Hardware Prototype](images/abde7742-7bf9-46ba-972c-c22de2f6e959.jpg)
+
+The physical ESP32-based prototype integrates sensors, relay-controlled loads, and supporting circuitry for Smart Campus automation.
+
+### 📊 Smart Campus Dashboard
+
+![5G-AI Smart Campus Dashboard](images/smart-campus-dashboard.jpeg)
+
+The web dashboard provides real-time telemetry, campus-zone status, historical analytics, energy monitoring, anomaly information, and intelligent insights.
+
+### 🏗️ System Architecture
+
+![5G-AI Smart Campus System Architecture](images/system-architecture.png)
+
+The architecture connects the sensing layer, ESP32 controller, network communication, backend, database, dashboard, analytics, and future 5G/edge-MEC integration.
+
 ## 🎯 Objectives
 
 * Monitor campus environmental conditions in real time.
